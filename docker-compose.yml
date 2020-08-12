@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    ports:
+      - "8080:8080"
+  db:
+    tty: true
+    image: keinos/sqlite3:latest
+    volumes:
+    - ./db:/root/db # copy db, if it exists
+    - ./scripts:/root/scripts # copy scripts to init db
+    entrypoint: ["sh", "/root/scripts/init_db.sh"]
