@@ -1,4 +1,5 @@
 version: '3.8'
+
 services:
   app:
     build:
@@ -8,10 +9,19 @@ services:
       - db
     ports:
       - "8080:8080"
+    networks:
+        - defaultnet
   db:
     tty: true
     image: keinos/sqlite3:latest
+    networks:
+      defaultnet:
+        aliases:
+          - sqlite3db
     volumes:
     - ./db:/root/db # copy db, if it exists
     - ./scripts:/root/scripts # copy scripts to init db
     entrypoint: ["sh", "/root/scripts/init_db.sh"]
+
+networks:
+  defaultnet:
