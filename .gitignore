@@ -116,3 +116,6 @@ Vagrantfile
 
 # sqlite3
 *.sqlite3
+
+# app specific
+secret.yml
