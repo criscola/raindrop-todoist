@@ -37,7 +37,7 @@ func main() {
 	req.Header.Add("Authorization", "Bearer " + viper.GetString("RAINDROP_TOKEN"))
 
 	res, err := client.Do(req)
-	if err != nil {             // Handle errors reading the config file
+	if err != nil {
 		panic(fmt.Errorf("Fatal error sending request: %s \n", err))
 	}
 
@@ -45,12 +45,8 @@ func main() {
 	body, err := ioutil.ReadAll(res.Body)
 
 	fmt.Println(string(body))
+
 	// Connect to DB
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error waiting for db port to open: %v\n", err)
-	}
-
 	// Try connecting to the db with 1 sec sleep between retries for a maximum of 10 times
 	for i := 0; i < 10; i++ {
 		conn, err = pgx.Connect(context.Background(), os.Getenv("POSTGRES_URL"))
