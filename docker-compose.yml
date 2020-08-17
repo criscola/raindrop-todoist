@@ -1,7 +1,24 @@
 version: '3.8'
 
 services:
+  db:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      PGDATA: ${PGDATA}
+    networks:
+      defaultnet:
+        aliases:
+          - ${POSTGRES_HOSTNAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db:${PGDATA}
+      - ./scripts:/docker-entrypoint-initdb.d
   app:
+    tty: true
     build:
       context: ./app
       dockerfile: Dockerfile
@@ -11,17 +28,7 @@ services:
       - "8080:8080"
     networks:
         - defaultnet
-  db:
-    tty: true
-    image: keinos/sqlite3:latest
-    networks:
-      defaultnet:
-        aliases:
-          - sqlite3db
-    volumes:
-    - ./db:/root/db # copy db, if it exists
-    - ./scripts:/root/scripts # copy scripts to init db
-    entrypoint: ["sh", "/root/scripts/init_db.sh"]
-
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
 networks:
   defaultnet:

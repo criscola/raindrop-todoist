@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/jackc/pgx/v4"
 	"github.com/spf13/viper"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"time"
 )
+
+var conn *pgx.Conn
 
 func main() {
 	// Load configuration
@@ -39,4 +45,24 @@ func main() {
 	body, err := ioutil.ReadAll(res.Body)
 
 	fmt.Println(string(body))
+	// Connect to DB
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error waiting for db port to open: %v\n", err)
+	}
+
+	// Try connecting to the db with 1 sec sleep between retries for a maximum of 10 times
+	for i := 0; i < 10; i++ {
+		conn, err = pgx.Connect(context.Background(), os.Getenv("POSTGRES_URL"))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+			fmt.Println("Retry num: ", i)
+			time.Sleep(time.Second)
+		} else {
+			fmt.Println("DB successfully connected.")
+			break
+		}
+	}
+	defer conn.Close(context.Background())
+
 }
