@@ -119,3 +119,5 @@ Vagrantfile
 
 # app specific
 secret.yml
+db/
+.env
