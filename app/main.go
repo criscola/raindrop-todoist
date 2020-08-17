@@ -34,7 +34,7 @@ func main() {
 	req.URL.Opaque = `/rest/v1/raindrops/0?search=%5B%7B%22key%22:%22tag%22,%22val%22:%22` +
 		viper.GetString("LABEL_NAME") + `%22%7D%5D`
 
-	req.Header.Add("Authorization", "Bearer 6da4f2c4-f5bb-4626-9fb2-733e743fac1a")
+	req.Header.Add("Authorization", "Bearer " + viper.GetString("RAINDROP_TOKEN"))
 
 	res, err := client.Do(req)
 	if err != nil {             // Handle errors reading the config file
