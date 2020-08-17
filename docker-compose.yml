@@ -30,5 +30,7 @@ services:
         - defaultnet
     environment:
       - POSTGRES_URL=${POSTGRES_URL}
+      - RAINDROP_TOKEN=${RAINDROP_TOKEN}
+      - TODOIST_TOKEN=${TODOIST_TOKEN}
 networks:
   defaultnet:
