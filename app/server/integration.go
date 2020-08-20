@@ -63,8 +63,20 @@ func Start() {
 	}
 	// Phase 2:
 	// Get new data from sync api of todoist
+	/*
+	data, err := todoistClient.GetCompletedReadings()
 	// Foreach task in data:
-		// If task.checked == true and task.id is contained in db:
+	for _, taskId := range readingIds {
+		// If task.id is contained in db:
+		if db.IsTaskIdPresent(taskId) {
+			// Remove label from bookmark in Raindrop
+			err := raindropClient.RemoveLabelFromTask(taskId)
+			// Remove entry from database
+			err = db.RemoveRecordByTaskId(taskId)
+		}
+	}
+
+	 */
 			// Get bookmarkId where task.id == query.taskId
 			// Remove label from bookmark in Raindrop
 			// Remove entry from database
