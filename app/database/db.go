@@ -80,3 +80,25 @@ func (db *Db) InsertBookmarkWithTodo(bookmarkId, taskId int64) error {
 	}
 	return nil
 }
+
+func (db *Db) GetBookmarkIdByTaskId(taskId int64) (int64, error) {
+	var bookmarkId int64
+	row := db.db.QueryRow(context.Background(), "SELECT id_bookmark FROM bookmark_with_todo WHERE id_todo = $1", &taskId)
+	if err := row.Scan(&bookmarkId); err != nil {
+		return -1, err
+	}
+	return bookmarkId, nil
+
+}
+
+func (db *Db) RemoveRecordByBookmarkId(bookmarkId int64) error {
+	result, err := db.db.Exec(context.Background(), "DELETE FROM bookmark_with_todo WHERE id_bookmark = $1",
+		&bookmarkId)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() != 1 {
+		db.logger.Error().Msg("Tried to delete a nonexistent record from db")
+	}
+	return nil
+}
