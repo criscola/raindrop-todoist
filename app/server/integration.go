@@ -44,42 +44,44 @@ func Start() {
 	}
 
 	// Foreach bookmark in bookmarks:
-
 	for _, pr := range postponedReadings {
 		// Create todoist task of bookmark and get taskId
 		var taskId int64
-		// Phase 2:
 		if len(postponedReadings) != 0 {
 			taskId, err = todoistClient.NewReadingTask(pr.Title, pr.Url, pr.Domain)
 			if err != nil {
-				globalLogger.Fatal().Err(err).Msg("Failure getting postponed readings from Raindrop API")
+				globalLogger.Fatal().Err(err).Msg("Failure creating a new reading task using Todoist API")
 			}
 		}
 		// Create entry in db with bookmark.id and taskId
 		err := db.InsertBookmarkWithTodo(pr.BookmarkId, taskId)
 		if err != nil {
-			globalLogger.Fatal().Err(err).Msg("Failure getting postponed readings from Raindrop API")
+			globalLogger.Fatal().Err(err).Msg("Failure inserting record in db")
 		}
 	}
 	// Phase 2:
 	// Get new data from sync api of todoist
-	/*
-	data, err := todoistClient.GetCompletedReadings()
-	// Foreach task in data:
-	for _, taskId := range readingIds {
-		// If task.id is contained in db:
-		if db.IsTaskIdPresent(taskId) {
-			// Remove label from bookmark in Raindrop
-			err := raindropClient.RemoveLabelFromTask(taskId)
-			// Remove entry from database
-			err = db.RemoveRecordByTaskId(taskId)
-		}
-	}
 
-	 */
-			// Get bookmarkId where task.id == query.taskId
-			// Remove label from bookmark in Raindrop
-			// Remove entry from database
+	completedReadings, err := todoistClient.GetCompletedReadings()
+	if err != nil {
+		globalLogger.Fatal().Err(err).Msg("Failure getting completed readings from Todoist API")
+	}
+	// Foreach task in data:
+	for _, taskId := range completedReadings {
+		bookmarkId, err := db.GetBookmarkIdByTaskId(taskId)
+		// If task.id is contained in db:
+		if err != nil {
+			globalLogger.Fatal().Err(err).Msg("Failure getting bookmark id from db by task id")
+		}
+
+		// Remove label from bookmark in Raindrop
+		err := raindropClient.RemovePostponedTagFromBookmark(bookmarkId)
+		if err != nil {
+			globalLogger.Fatal().Err(err).Msg("Failure removing label from task using Raindrop API")
+		}
+		// Remove entry from database
+		err = db.RemoveRecordByBookmarkId(taskId)
+	}
 }
 
 func extractIds(records []database.BookmarkWithTodo) []int64 {

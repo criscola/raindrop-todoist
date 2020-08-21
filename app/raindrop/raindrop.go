@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -131,7 +132,36 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 	return prs, nil
 }
 
-func RemoveLabelFromBookmark(bookmarkId int64) error {
+// TODO: finish
+func (c *Client) RemovePostponedTagFromBookmark(bookmarkId int64) error {
+	endpoint := baseURL.ResolveReference(&url.URL{Path: "raindrop/" + strconv.FormatInt(bookmarkId, 10)})
+	postBody := strings.NewReader(`{"tags":["RL","MojoJoJo"]}`)
+	req, err := http.NewRequest("PUT", endpoint.String(), postBody)
+
+	// TODO: Pass err and log error up
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Str("service", "Raindrop client").
+			Str("function", "GetPostponedReadings").
+			Msg("Error building request")
+		return err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	if err != nil {
+		panic(fmt.Errorf("Fatal error building request: %s \n", err))
+	}
+	res, err := c.c.Do(req)
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(fmt.Errorf("Error reading response body: %s \n", err))
+	}
+
+
 	return nil
 }
 
@@ -142,27 +172,4 @@ func contains(s []int64, k int64) bool {
 		}
 	}
 	return false
-}
-
-// formatRequest generates ascii representation of a request
-func formatRequest(r *http.Request) string {
-	// Create return string
-	var request []string // Add the request string
-	url := fmt.Sprintf("%v %v %v", r.Method, r.URL, r.Proto)
-	request = append(request, url) // Add the host
-	request = append(request, fmt.Sprintf("Host: %v", r.Host)) // Loop through headers
-	for name, headers := range r.Header {
-		name = strings.ToLower(name)
-		for _, h := range headers {
-			request = append(request, fmt.Sprintf("%v: %v", name, h))
-		}
-	}
-
-	// If this is a POST, add post data
-	if r.Method == "POST" {
-		r.ParseForm()
-		request = append(request, "\n")
-		request = append(request, r.Form.Encode())
-	}   // Return the request as a string
-	return strings.Join(request, "\n")
 }
