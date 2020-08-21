@@ -46,26 +46,54 @@ func New(apiKey string, logger *logging.StandardLogger) *Client {
 }
 
 // GetCompletedReadings gets the new tasks since the last request which have been checked (i.e. completed) by the user
-// in the meantime. Lookup https://developer.todoist.com/sync/v8/#sync
-/*
+// in the meantime. See https://developer.todoist.com/sync/v8/#sync
+
 func (c *Client) GetCompletedReadings() ([]int64, error) {
-	req, err := http.NewRequest("GET", "/sync/v8/sync", nil)
+	q := baseURL.Query() // Get a copy of the query values.
+	q.Add("resource_types", `["items"]`)
+	endpoint := baseURL.ResolveReference(&url.URL{RawQuery: q.Encode()})
+
+	req, err := http.NewRequest("POST", endpoint.String(), nil)
 	if err != nil {
+		// TODO logging
+		panic(fmt.Errorf("Fatal error in building request: %s \n", err))
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	res, err := c.c.Do(req)
+	// TODO logging
+	if err != nil {
+		panic(fmt.Errorf("Fatal error sending request: %s \n", err))
 		return nil, err
 	}
 
-	parameters := url.Values{}
-	parameters.Add("")
-}*/
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		panic(fmt.Errorf("Fatal reading response body: %s \n", err))
+		return nil, err
+	}
+
+	var completedReadings []int64
+	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		isChecked, err := jsonparser.GetInt(value, "checked")
+		if isChecked == 1 {
+			id, _ := jsonparser.GetInt(data, "id")
+
+			completedReadings = append(completedReadings, id)
+		}
+	}, "items")
+
+	return completedReadings, nil
+}
 
 func (c *Client) NewReadingTask(title, bookmarkUrl, domain string) (int64, error) {
 	taskContent := `Read [` + title  + `](` + bookmarkUrl + `) on `+ domain + `}]`
 	cmdUuid := uuid.New().String()
 	tempId := uuid.New().String()
-
 	q := baseURL.Query() // Get a copy of the query values.
-	q.Add("commands", `[{"type": "item_add", "temp_id": "` + tempId + `", "uuid": "` + cmdUuid + `", "args": {"content": "` + taskContent + `"}}]`)
 
+	q.Add("commands", `[{"type": "item_add", "temp_id": "` + tempId + `", "uuid": "` + cmdUuid + `", "args": {"content": "` + taskContent + `"}}]`)
 	endpoint := baseURL.ResolveReference(&url.URL{RawQuery: q.Encode()})
 
 	// Add task to todoist and save the id
