@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/criscola/raindrop-todoist/server"
 	"github.com/spf13/cobra"
+	"time"
 )
 
 // serveCmd represents the serve command
@@ -34,7 +35,7 @@ to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("serve called")
 		// Start the application
-		server.Start()
+		server.Start(4 * time.Second)
 	},
 }
 
