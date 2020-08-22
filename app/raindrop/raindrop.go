@@ -1,9 +1,11 @@
 package raindrop
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/buger/jsonparser"
 	"github.com/criscola/raindrop-todoist/logging"
+	"github.com/criscola/raindrop-todoist/utils"
 	"github.com/rs/zerolog/log"
 	"io/ioutil"
 	"net/http"
@@ -88,9 +90,6 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 		panic(fmt.Errorf("Error reading response body: %s \n", err))
 	}
 
-	fmt.Println(formatRequest(req))
-	fmt.Println(string(body))
-	fmt.Println(c.postponedLabelName)
 	prs = []PostponedReading{}
 
 	// Iterate over every item returned by request
@@ -101,7 +100,7 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 			panic(fmt.Errorf("Fatal error sending request: %s \n", err))
 		}
 
-		if len(exclusions) == 0 || !contains(exclusions, bookmarkId) {
+		if len(exclusions) == 0 || !utils.SInt64Contains(exclusions, bookmarkId) {
 			// If bookmark doesn't exist, create the relative Todoist task and add IDs to the db
 
 			domain, err := jsonparser.GetString(value, "domain")
@@ -134,8 +133,25 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 
 // TODO: finish
 func (c *Client) RemovePostponedTagFromBookmark(bookmarkId int64) error {
+	// First get tags from the bookmark
+	tags, err := c.GetBookmarkTags(bookmarkId)
+	if err != nil {
+		return err
+	}
+	fmt.Println(tags)
+	// If no postponed tag is specified, return error
+	if !utils.SStringContains(tags, c.postponedLabelName) {
+		return fmt.Errorf("no postponed tag was found for removal for bookmark %d", bookmarkId)
+	}
+
+	utils.RemoveFromSString(tags, c.postponedLabelName)
+	jsonTags, err := json.Marshal(tags)
+	if err != nil {
+		return err
+	}
+
 	endpoint := baseURL.ResolveReference(&url.URL{Path: "raindrop/" + strconv.FormatInt(bookmarkId, 10)})
-	postBody := strings.NewReader(`{"tags":["RL","MojoJoJo"]}`)
+	postBody := strings.NewReader(`{"tags":` + string(jsonTags) + `}`)
 	req, err := http.NewRequest("PUT", endpoint.String(), postBody)
 
 	// TODO: Pass err and log error up
@@ -160,16 +176,34 @@ func (c *Client) RemovePostponedTagFromBookmark(bookmarkId int64) error {
 	if err != nil {
 		panic(fmt.Errorf("Error reading response body: %s \n", err))
 	}
-
+	fmt.Println(string(body))
 
 	return nil
 }
 
-func contains(s []int64, k int64) bool {
-	for _, e := range s {
-		if k == e {
-			return true
-		}
+func (c *Client) GetBookmarkTags(bookmarkId int64) ([]string, error) {
+	endpoint := baseURL.ResolveReference(&url.URL{Path: "raindrop/" + strconv.FormatInt(bookmarkId, 10)})
+
+	req, err := http.NewRequest("GET", endpoint.String(), nil)
+	if err != nil {
+		return nil, err
 	}
-	return false
+	res, err := c.c.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(string(body))
+
+	var tags []string
+	jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+		fmt.Println(string(value))
+		tags = append(tags, string(value))
+	}, "item", "tags")
+	return tags, nil
 }
+
