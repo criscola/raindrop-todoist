@@ -88,7 +88,7 @@ func (c *Client) GetCompletedReadings() ([]int64, error) {
 }
 
 func (c *Client) NewReadingTask(title, bookmarkUrl, domain string) (int64, error) {
-	taskContent := `Read [` + title  + `](` + bookmarkUrl + `) on `+ domain + `}]`
+	taskContent := `Read [` + title  + `](` + bookmarkUrl + `) on `+ domain
 	cmdUuid := uuid.New().String()
 	tempId := uuid.New().String()
 	q := baseURL.Query() // Get a copy of the query values.
