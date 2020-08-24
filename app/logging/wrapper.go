@@ -16,6 +16,6 @@ func New() *StandardLogger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	prettyOutput := zerolog.New(zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: time.RFC3339})
 
-	logger := zerolog.New(prettyOutput).With().Timestamp().Logger()
+	logger := zerolog.New(prettyOutput).With().Caller().Timestamp().Logger()
 	return &StandardLogger{&logger}
 }

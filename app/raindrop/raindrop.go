@@ -93,7 +93,7 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 	prs = []PostponedReading{}
 
 	// Iterate over every item returned by request
-	_, err = jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+	jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 		bookmarkId, err := jsonparser.GetInt(value, "_id")
 
 		if err != nil {
