@@ -59,7 +59,7 @@ func (db *Db) GetAllBookmarksWithTodo() (records []BookmarkWithTodo, err error) 
 	for rows.Next() {
 		var bookmarkId int64
 		var taskId int64
-		err = rows.Scan(&bookmarkId, &taskId)
+		err = rows.Scan(&bookmarkId, &taskId, nil)
 		if err != nil {
 			return nil, err
 		}
