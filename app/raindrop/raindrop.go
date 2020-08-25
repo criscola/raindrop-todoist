@@ -131,21 +131,21 @@ func (c *Client) GetPostponedReadings(exclusions []int64) (prs []PostponedReadin
 	return prs, nil
 }
 
-// TODO: finish
 func (c *Client) RemovePostponedTagFromBookmark(bookmarkId int64) error {
 	// First get tags from the bookmark
 	tags, err := c.GetBookmarkTags(bookmarkId)
 	if err != nil {
 		return err
 	}
-	fmt.Println(tags)
+
 	// If no postponed tag is specified, return error
 	if !utils.SStringContains(tags, c.postponedLabelName) {
 		return fmt.Errorf("no postponed tag was found for removal for bookmark %d", bookmarkId)
 	}
 
-	utils.RemoveFromSString(tags, c.postponedLabelName)
+	tags = utils.RemoveFromSString(tags, c.postponedLabelName)
 	jsonTags, err := json.Marshal(tags)
+
 	if err != nil {
 		return err
 	}
@@ -168,15 +168,11 @@ func (c *Client) RemovePostponedTagFromBookmark(bookmarkId int64) error {
 	if err != nil {
 		panic(fmt.Errorf("Fatal error building request: %s \n", err))
 	}
-	res, err := c.c.Do(req)
+	_, err = c.c.Do(req)
 
-	defer res.Body.Close()
-
-	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		panic(fmt.Errorf("Error reading response body: %s \n", err))
 	}
-	fmt.Println(string(body))
 
 	return nil
 }
@@ -197,11 +193,8 @@ func (c *Client) GetBookmarkTags(bookmarkId int64) ([]string, error) {
 		return nil, err
 	}
 
-	fmt.Println(string(body))
-
 	var tags []string
 	jsonparser.ArrayEach(body, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		fmt.Println(string(value))
 		tags = append(tags, string(value))
 	}, "item", "tags")
 	return tags, nil

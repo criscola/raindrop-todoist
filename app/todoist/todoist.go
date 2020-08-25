@@ -47,10 +47,10 @@ func New(apiKey string, logger *logging.StandardLogger) *Client {
 
 // GetCompletedReadings gets the new tasks since the last request which have been checked (i.e. completed) by the user
 // in the meantime. See https://developer.todoist.com/sync/v8/#sync
-
 func (c *Client) GetCompletedReadings() ([]int64, error) {
 	q := baseURL.Query() // Get a copy of the query values.
 	q.Add("resource_types", `["items"]`)
+	q.Add("sync_token", c.syncToken)
 	endpoint := baseURL.ResolveReference(&url.URL{RawQuery: q.Encode()})
 
 	req, err := http.NewRequest("POST", endpoint.String(), nil)
@@ -68,21 +68,24 @@ func (c *Client) GetCompletedReadings() ([]int64, error) {
 		return nil, err
 	}
 
-	data, err := ioutil.ReadAll(res.Body)
+	completedTaskRes, err := ioutil.ReadAll(res.Body)
+
 	if err != nil {
 		panic(fmt.Errorf("Fatal reading response body: %s \n", err))
 		return nil, err
 	}
 
 	var completedReadings []int64
-	jsonparser.ArrayEach(data, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-		isChecked, err := jsonparser.GetInt(value, "checked")
+	jsonparser.ArrayEach(completedTaskRes, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
+			isChecked, err := jsonparser.GetInt(value, "checked")
 		if isChecked == 1 {
-			id, _ := jsonparser.GetInt(data, "id")
+			id, _ := jsonparser.GetInt(value, "id")
 
 			completedReadings = append(completedReadings, id)
 		}
 	}, "items")
+
+	c.syncToken, err = jsonparser.GetString(completedTaskRes, "sync_token")
 
 	return completedReadings, nil
 }

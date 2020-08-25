@@ -3,6 +3,7 @@ package server
 // TODO we might want to create a struct for server and run it in separate instances
 
 import (
+	"fmt"
 	"github.com/criscola/raindrop-todoist/database"
 	"github.com/criscola/raindrop-todoist/logging"
 	"github.com/criscola/raindrop-todoist/raindrop"
@@ -62,11 +63,14 @@ func Start(pollingInterval time.Duration) {
 			if err != nil {
 				globalLogger.Fatal().Err(err).Msg("Failure inserting record in db")
 			}
+
+			time.Sleep(pollingInterval)
 		}
 		// Phase 2:
 		// Get new data from sync api of todoist
 
 		completedReadings, err := todoistClient.GetCompletedReadings()
+
 		if err != nil {
 			globalLogger.Fatal().Err(err).Msg("Failure getting completed readings from Todoist API")
 		}
@@ -78,17 +82,22 @@ func Start(pollingInterval time.Duration) {
 				globalLogger.Fatal().Err(err).Msg("Failure getting bookmark id from db by task id")
 			}
 
+			fmt.Printf("Removing bookmark %d from raindrop", bookmarkId)
 			// Remove label from bookmark in Raindrop
 			err = raindropClient.RemovePostponedTagFromBookmark(bookmarkId)
 			if err != nil {
 				globalLogger.Fatal().Err(err).Msg("Failure removing label from task using Raindrop API")
 			}
-			// Remove entry from database
-			err = db.RemoveRecordByBookmarkId(taskId)
 
-			// Wait
+			fmt.Printf("Removing task %d from raindrop", taskId)
+			// Remove entry from database
+			err = db.RemoveRecordByBookmarkId(bookmarkId)
+
 			time.Sleep(pollingInterval)
 		}
+
+		// Wait
+		time.Sleep(pollingInterval)
 	}
 }
 
